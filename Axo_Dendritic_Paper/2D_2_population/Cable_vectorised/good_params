@@ -1,0 +1,51 @@
+#turing
+
+# params
+α_EE = 0.5
+α_EI = 0.5
+α_IE = 0.7
+α_II = 0.2
+
+sigma_I = 1
+sigma_E = sigma_I
+σ_EE = sigma_E*0.1   #x10^-1 mm #
+σ_EI = sigma_I*1.2   #x10^-1 mm #
+σ_IE = sigma_E*0.1   #x10^-1 mm #
+σ_II = sigma_I*1.2 #x10^-1 mm #
+
+τ_E = 5
+
+τ_I =5
+
+κ_EE = .01
+κ_EI = .01
+κ_IE = .01
+κ_II = .01
+
+d = 0.1
+d_EE = d
+d_EI = d
+d_IE = d
+d_II = d
+
+Wc = 1
+W0_EE =Wc*3.0
+W0_EI = Wc*1.0
+W0_IE = Wc*3.0
+W0_II = Wc*1.0
+
+D_E = 0.05
+D_I = 0.05
+
+
+h_E= 0.0
+h_I= 0.0
+γ = 0.0179 #good bif param!
+γ_E = γ
+γ_I = γ
+v = 2
+g_EXT = 50
+
+V_plus = 5
+V_neg = -V_plus
+kc = 1

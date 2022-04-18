@@ -1,0 +1,86 @@
+# # # # MODEL PARAMETERS # # # #
+ΔA = 0.20
+ΔE = ΔA
+ΔI = ΔA
+τE = 9.0
+τI = 11.0
+VsynEE = 12.0
+VsynEI = VsynEE*(-10.0/16.0)
+VsynIE = VsynEE*(10.0/16.0)
+VsynII = VsynEE*(-11.0/16.0)
+
+#g and ψ params
+ss = 1
+σEE = ss * 0.2
+σEI = ss * 1.5
+σIE = 0.2
+σII = 1.5
+
+#conduction velocity
+v =.08
+
+#synaptic time constant
+αEE = 0.7
+αEI = 0.5
+αIE = 0.7
+αII = 0.8
+
+#synaptic connection strengths
+κSc = 1.0
+κSEE = κSc*2.93
+κSEI = κSc*κSEE*(4.9/5.0)
+κSIE = κSc*κSEE*(4.9/5.0)
+κSII =  κSc*κSEE*(3.0/5.0)
+
+#Drive params
+ηE = 1
+ηI = 1
+# gaps Strengths
+κV = .0
+κVEE = 0.0
+κVEI = 0.0
+κVIE = κVEI
+κVII = 0.0
+τ0EE = 0
+τ0EI = 0
+τ0IE = 0
+τ0II = 0
+
+# Potassium params # # #
+# sigmoid params
+A1 = 1.0
+A2 = 2.0 #steepness
+A3 = 0.0
+βK = 1.0 #time constant
+# other potassiumn params
+δ = 0.2 #decay rate
+A4 = 0.3 #diffusion rate
+fK(x,A1,A2,A3) = x*f("sigmoid",x,A1,A2,A3)
+dfK(x,A1,A2,A3) = f("sigmoid",x,A1,A2,A3) + x*dfdx("sigmoid",x,A1,A2,A3)
+# # # # # # # # # # # #
+# Drive params # # # #
+#Excitatory
+B1 =15.0
+B2 = 8.0# steepness
+B3 = 1.0 #threshold
+B4 = 0.0
+βηE = 25 #time constant
+fηE(x,B1,B2,B3) = f("sigmoid",x,B1,B2,B3)
+dfηE(x,B1,B2,B3) = dfdx("sigmoid",x,B1,B2,B3)
+#Inhibitory
+C1 = 15.0
+C2 = 8.0 # steepness
+C3 = 1.0 # threshold
+C4 = 0.0
+βηI = 25 #time constant
+
+fηI(x,C1,C2,C3) = f("sigmoid",x,C1,C2,C3)
+dfηI(x,C1,C2,C3) = dfdx("sigmoid",x,C1,C2,C3)
+# # # # # # # # # # # #
+# gaps Strength params
+D1 = 0.5
+D2 = -2.0 # steepness
+D3 = 1.0
+βκV = 4.0 #time constant
+fκV(x,D1,D2,D3) = f("sigmoid",x,D1,D2,D3)
+dfκV(x,D1,D2,D3) = dfdx("sigmoid",x,D1,D2,D3)
