@@ -59,13 +59,13 @@ function rhsFun_2pop(du, u, p, t)
 #   Y1_II
     du[3*RX+1:4*RX] .= z1(Y1_II, Psi_II, v_II, VI0, W_II, σ_II, κ_II, hI, type, beta, deltaF_II, Dx, Drr,D_I,Dxx)
 #   Psi_EE
-    du[4*RX + 1:5 * RX] .=  v_EE*(-((1/σ_EE).*Psi_EE .+ κ_EE.*Dx*Psi_EE) + Y1_EE + (W_EE/σ_EE)*firingrate.(VE0 .- hE, type, beta).* deltaF_EE)
+    du[4*RX + 1:5 * RX] .=  v_EE*(-((1. /σ_EE).*Psi_EE .+ κ_EE.*Dx*Psi_EE) + Y1_EE + (W_EE/σ_EE)*firingrate.(VE0 .- hE, type, beta).* deltaF_EE)
 #   Psi_EI
-    du[5*RX + 1:6 * RX] .=  v_EI*(-((1/σ_EI).*Psi_EI .+ κ_EI.*Dx*Psi_EI) + Y1_EI + (W_EI/σ_EI)*firingrate.(VI0.- hI, type, beta).* deltaF_EI)
+    du[5*RX + 1:6 * RX] .=  v_EI*(-((1. /σ_EI).*Psi_EI .+ κ_EI.*Dx*Psi_EI) + Y1_EI + (W_EI/σ_EI)*firingrate.(VI0.- hI, type, beta).* deltaF_EI)
 #   Psi_IE
-    du[6*RX + 1:7 * RX] .=  v_IE*(-((1/σ_IE).*Psi_IE .+ κ_IE.*Dx*Psi_IE) + Y1_IE + (W_IE/σ_IE)*firingrate.(VE0 .- hE, type, beta).* deltaF_IE)
+    du[6*RX + 1:7 * RX] .=  v_IE*(-((1. /σ_IE).*Psi_IE .+ κ_IE.*Dx*Psi_IE) + Y1_IE + (W_IE/σ_IE)*firingrate.(VE0 .- hE, type, beta).* deltaF_IE)
 #   Psi_II
-    du[7*RX + 1:8 * RX] .=  v_II*(-((1/σ_II).*Psi_II .+ κ_II.*Dx*Psi_II) + Y1_II + (W_II/σ_II)*firingrate.(VI0 .- hI, type, beta).* deltaF_II)
+    du[7*RX + 1:8 * RX] .=  v_II*(-((1. /σ_II).*Psi_II .+ κ_II.*Dx*Psi_II) + Y1_II + (W_II/σ_II)*firingrate.(VI0 .- hI, type, beta).* deltaF_II)
 #   Y_EE
     du[8 * RX + 1:9 * RX] .= α_EE * (g_EXT .+  Psi_EE .- Y2_EE)
 #   Y_EI

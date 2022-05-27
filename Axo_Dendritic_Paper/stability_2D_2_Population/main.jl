@@ -46,10 +46,10 @@ D_I = 0.05
 
 h_E= 0.0
 h_I= 0.0
-γ = 0.375 #good bif param!
+γ = 0.31 #good bif param!
 γ_E = γ
 γ_I = γ
-v = .1
+v = 1
 g_EXT = 50
 
 
@@ -132,7 +132,7 @@ k_max = k_save[findmax(reL)[2]]
 
 
 if save_data == 1
-    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/2_Pop_plots/data/turing_hopf_spectrum.npy", data)
+  #  npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/2_Pop_plots/data/turing_hopf_spectrum.npy", data)
 end
 plot(p1,p2)
 

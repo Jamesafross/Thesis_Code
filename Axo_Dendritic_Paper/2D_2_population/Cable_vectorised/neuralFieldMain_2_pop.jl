@@ -1,19 +1,14 @@
-using ProgressMeter
-using Plots
-using SparseArrays
-using LinearAlgebra
-using DifferentialEquations
-using NPZ
+using ProgressMeter,Plots,SparseArrays,LinearAlgebra,DifferentialEquations,NPZ
 #Load functions
 include("firingrate.jl")
 include("Banded_Matrices.jl")
 include("rhsFuncs2_noshunts.jl")
 include("Guassian_Delta.jl")
-kc=2.49
-
+#kc=2.49
+kc=2.09
 #options
-save_data = 1
-max_T = 1500
+save_data = 0
+max_T = 2000
 #mesh paramaters
   min_R = -4*pi;
   max_R = 4*pi
@@ -34,14 +29,14 @@ max_T = 1500
 
 sigma_I = 1
 sigma_E = sigma_I
-σ_EE = sigma_E*1.5  #x10^-1 mm #
-σ_EI = sigma_I*0.2   #x10^-1 mm #
-σ_IE = sigma_E*1.5   #x10^-1 mm #
-σ_II = sigma_I*0.2 #x10^-1 mm #
+σ_EE = sigma_E*0.1  #x10^-1 mm #
+σ_EI = sigma_I*1.2   #x10^-1 mm #
+σ_IE = sigma_E*0.1   #x10^-1 mm #
+σ_II = sigma_I*1.2 #x10^-1 mm #
 
-τ_E = 2
+τ_E = 5
 
-τ_I =2
+τ_I =5
 
 κ_EE = .01
 κ_EI = .01
@@ -55,10 +50,10 @@ d_IE = d
 d_II = d
 
 Wc = 1
-W0_EE =Wc*1.0
-W0_EI = Wc*2.2
-W0_IE = Wc*2.0
-W0_II = Wc*2.7
+W0_EE =Wc*3.0
+W0_EI = Wc*1.0
+W0_IE = Wc*3.0
+W0_II = Wc*1.0
 
 D_E = 0.05
 D_I = 0.05
@@ -66,15 +61,15 @@ D_I = 0.05
 
 h_E= 0.0
 h_I= 0.0
-γ = 0.4 #good bif param!
+γ = 0.019 #good bif param!
 γ_E = γ
 γ_I = γ
-v = .1
+v = 1
 g_EXT = 50
 
 #k_vec = LinRange(0,5,100000)
 
-V_plus = 1
+V_plus = 5
 V_neg = -V_plus
   type = "tanh"
   beta = γ
@@ -85,18 +80,18 @@ v_EE = v
 v_EI = v
 v_IE = v
 v_II = v
-  drdr = dr * dr
-  dxdx = dx * dx
-  R = Int(round((max_R-min_R) / dr))
+drdr = dr * dr
+dxdx = dx * dx
+R = Int(round((max_R-min_R) / dr))
 
-  X = Int(round((max_X - min_X) / dx)) + 1
-  RX = R * X
-  linspace_X = collect(min_X:dx:max_X) #linear grid for X
-  xzero = Int(findfirst(linspace_X .== 0)) #this is the grid number for x=0
-  pos_EE = Int(round.(xzero + d_EE / dx))#this is the actual grid number for the position
-  pos_EI = Int(round.(xzero + d_EI / dx))#this is the actual grid number for the position
-  pos_IE = Int(round.(xzero + d_IE / dx))#this is the actual grid number for the position
-  pos_II = Int(round.(xzero + d_II / dx))#this is the actual grid number for the position
+X = Int(round((max_X - min_X) / dx)) + 1
+RX = R * X
+linspace_X = collect(min_X:dx:max_X) #linear grid for X
+xzero = Int(findfirst(linspace_X .== 0)) #this is the grid number for x=0
+pos_EE = Int(round.(xzero + d_EE / dx))#this is the actual grid number for the position
+pos_EI = Int(round.(xzero + d_EI / dx))#this is the actual grid number for the position
+pos_IE = Int(round.(xzero + d_IE / dx))#this is the actual grid number for the position
+pos_II = Int(round.(xzero + d_II / dx))#this is the actual grid number for the position
 #deltaF = zeros(RX)
 #deltaF[(d - 1) * R + 1:(d) * R] .= 1/dx
 deltaF_EE = repeat(smooth_Delta(linspace_X .- (d_EE),dx),inner = R)
@@ -174,7 +169,7 @@ tspan = (0.0, max_T)
 params = [g_EXT,type,α_EE,α_EI,α_IE,α_II, τ_E,τ_I,κ_EE,κ_EI,κ_IE,κ_II, v_EE,v_EI, v_IE, v_II,W0_EE,W0_EI,W0_IE,W0_II, hE,hI,beta,d_EE,d_EI,d_IE,d_II, deltaF_EE,deltaF_EI,deltaF_IE,deltaF_II, Dxx, Dx, Drr,linspace_X]
 prob = ODEProblem(rhsFun_2pop,u0, tspan, params)
 print("\n Solving... \n")
-sol = solve(prob,RK4(),saveat=dt,progress = true,reltol=1e-8,abstol=1e-8)
+sol = solve(prob,BS3(),saveat=collect(max_T-500:dt:max_T),progress = true)
 print("\n Done! \n")
 
 #z_sol = reshape(sol[1:RX,:], R, X, size(sol, 2))
@@ -213,6 +208,11 @@ timespan = LinRange(0,max_T,size(VE_sol,3))
 #plot([gII_sol[20,pos_EE,1:end],gEI_sol[20,pos_EE,1:end],gIE_sol[20,pos_EE,1:end],gEE_sol[20,pos_EE,1:end]])
 plot(p1,p2)
 if save_data == 1
-    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/2_Pop_plots/data/turing_hopf_sim.npy", VE_sol[:,:,end-500:end])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringVE.npy", VE_sol[:,:,:])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringVI.npy", VI_sol[:,:,:])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringgEE.npy", gEE_sol[:,:,:])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringgIE.npy", gIE_sol[:,:,:])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringgEI.npy", gEI_sol[:,:,:])
+    npzwrite("/home/james/PhD_Work/Python_Code/Axo_Dendritic_Paper/TuringgII.npy", gII_sol[:,:,:])
 end
-makegif(VE_sol[:,:,1:end])
+makegif(VE_sol[:,:,end-500:end])

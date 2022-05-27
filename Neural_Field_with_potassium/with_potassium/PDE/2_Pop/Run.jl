@@ -4,10 +4,12 @@ using DifferentialEquations
 using NPZ
 using NLsolve
 using JLD
+using Parameters
 
 include("functions/banded_matrices.jl")
 include("functions/RHS_funcs.jl")
 include("functions/miscfunctions.jl")
+include("Parameters.jl")
 
 #moreK : A1 = 2.0
 #midK : A1 = 1.0
@@ -17,16 +19,16 @@ include("functions/miscfunctions.jl")
 #highdecay = 0.8
 
 #lowdiffusion = 0.01
-#highdiffusion = 1.5
+#highdiffusion = 0.8
 
 DIRSAVE = "/1D_potassium"
-file_name = "potassium_1D_highdiffusion"
+file_name = "high_kappaII_EI_IE_EE"
 function savedata(save_data)
     if save_data == 1
         print("SAVING")
-        npzwrite("/home/james/PhD_Work/Python_Code/ExtraCellularPotassium/data$DIRSAVE/ZE_$file_name.npy", ZE)
-        npzwrite("/home/james/PhD_Work/Python_Code/ExtraCellularPotassium/data$DIRSAVE/ZI_$file_name.npy", ZI)
-        npzwrite("/home/james/PhD_Work/Python_Code/ExtraCellularPotassium/data$DIRSAVE/K_$file_name.npy", K)
+        npzwrite("/home/james/PhD_Work/Python_Code/2_Pop_Gaps_Movies/data/ZE_$file_name.npy", ZE)
+        npzwrite("/home/james/PhD_Work/Python_Code/2_Pop_Gaps_Movies/data/ZI_$file_name.npy", ZI)
+        #npzwrite("/home/james/PhD_Work/Python_Code/2_Pop_Gaps_Movies/data/K_$file_name.npy", K)
 
     end
 end
@@ -36,30 +38,31 @@ function bump(X,xmid,size)
 end
 
 
-use_rand_init_conds = 1 # custom initial conditions if not perturbing steady state
+use_rand_init_conds = 0 # custom initial conditions if not perturbing steady state
 attached_steady_state = 0
 restart_solve = 0
 load_data = 0
-save_data = 1
+save_data = 0
+
 
 # space nd tim parameters
-X_max = 2.0pi;
-dx = pi/2^6
-T_max =6000.0
+X_max = 1.0pi;
+dx = pi/2^7
+T_max =4000.0
 dxdx = dx * dx;
-saveat = collect(T_max-100:0.1:T_max)
+saveat = collect(T_max-100:0.2:T_max)
 
 
 #options
-dimension = 1  # number of spatial dimensions (1 or 2)
+dimension = 2 # number of spatial dimensions (1 or 2)
 
-Add_Potassium = 1 #option to add or remove potassium dynamics (0 or 1)
+Add_Potassium = 0 #option to add or remove potassium dynamics (0 or 1)
 gaps_option = "I-I"  #("ALL-ALL" or "I-I" or "OFF")
 options = [Add_Potassium, gaps_option, dimension]
 
 
-kc= 1.1#wave length of perturbations
-amp_perturb = 0.001
+kc= 2.3#wave length of perturbations
+amp_perturb = 0.01
 run_sim = 1
 
 #perturb = .0*exp.(-(X_space.^2)/10)
@@ -85,6 +88,10 @@ elseif dimension == 2
     
 end
 
+mP = ModelParams2(κVII = 0.44,κVIE = 0.44,κVEI = 0.44,κVEE = 0.8)
+Opts = ModelSetup(dimension, gaps_option, Add_Potassium, ∇, ∇ψ)
+
+
 
 function init_conditions(u0,X,Add_Potassium)
     u0[1:20*X] .+= 0.1randn(20X)
@@ -97,102 +104,26 @@ function init_conditions(u0,X,Add_Potassium)
         u0[22*X + 1:23*X] .+= 0.1randn(X)
         u0[23*X + 1:24*X] .+= 0.1rand(X)
     end
-return 5u0
+return 1u0
 end
 
 # # # # MODEL PARAMETERS # # # #
 
-# # # # MODEL PARAMETERS # # # #
-ΔA = 0.20
-ΔE = ΔA
-ΔI = ΔA
-τE = 9.0
-τI = 11.0
-VsynEE = 12.0
-VsynEI = VsynEE*(-10.0/16.0)
-VsynIE = VsynEE*(10.0/16.0)
-VsynII = VsynEE*(-11.0/16.0)
 
-#g and ψ params
-ss = 1
-σEE = ss * 0.2
-σEI = ss * 1.5
-σIE = 0.2
-σII = 1.5
-
-#conduction velocity
-v =.08
-
-#synaptic time constant
-αEE = 0.7
-αEI = 0.5
-αIE = 0.7
-αII = 0.8
-
-#synaptic connection strengths
-κSc = 1.0
-κSEE = κSc*3.5
-κSEI = κSc*κSEE*(4.9/5.0)
-κSIE = κSc*κSEE*(4.9/5.0)
-κSII =  κSc*κSEE*(3.0/5.0)
-
-#Drive params
-ηE = 1
-ηI = 1
-# gaps Strengths
-κV = .0
-κVEE = 0.0
-κVEI = 0.0
-κVIE = κVEI
-κVII = 0.0
-τ0EE = 0
-τ0EI = 0
-τ0IE = 0
-τ0II = 0
-
-# Potassium params # # #
-# sigmoid params
-A1 = 1.0
-A2 = 2.0 #steepness
-A3 = 0.0
-βK = 1.0 #time constant
-# other potassiumn params
-δ = 0.2 #decay rate
-A4 = 1.5 #diffusion rate
 fK(x,A1,A2,A3) = x*f("sigmoid",x,A1,A2,A3)
 dfK(x,A1,A2,A3) = f("sigmoid",x,A1,A2,A3) + x*dfdx("sigmoid",x,A1,A2,A3)
-# # # # # # # # # # # #
-# Drive params # # # #
-#Excitatory
-B1 =15.0
-B2 = 8.0# steepness
-B3 = 1.0 #threshold
-B4 = 0.0
-βηE = 25 #time constant
+
 fηE(x,B1,B2,B3) = f("sigmoid",x,B1,B2,B3)
 dfηE(x,B1,B2,B3) = dfdx("sigmoid",x,B1,B2,B3)
-#Inhibitory
-C1 = 15.0
-C2 = 8.0 # steepness
-C3 = 1.0 # threshold
-C4 = 0.0
-βηI = 25 #time constant
+
 
 fηI(x,C1,C2,C3) = f("sigmoid",x,C1,C2,C3)
 dfηI(x,C1,C2,C3) = dfdx("sigmoid",x,C1,C2,C3)
-# # # # # # # # # # # #
-# gaps Strength params
-D1 = 0.5
-D2 = -2.0 # steepness
-D3 = 1.0
-βκV = 4.0 #time constant
+
 fκV(x,D1,D2,D3) = f("sigmoid",x,D1,D2,D3)
 dfκV(x,D1,D2,D3) = dfdx("sigmoid",x,D1,D2,D3)
-params = [ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,
-          σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-          αEE, αEI, αIE, αII, δ,
-          A1, A2, A3, B1, B2, B3, C1, C2, C3,
-          D1, D2, D3, βK, βηE, βηI,βκV,∇,∇ψ,options]
+
+params = [mP,Opts]
 
 
 u0,ssMat = setup(params,use_rand_init_conds,restart_solve,X)
@@ -212,7 +143,10 @@ end
 tspan = (0.0, T_max) # TIME SPAN
 # Set up ODE problem
 println("setting up Problem")
-prob = ODEProblem(rhsFun, u0, tspan, params)
+params2 = [mP,Opts]
+prob = ODEProblem(rhsFun, u0, tspan, params2)
+
+
 
 println(" Solving...")
 #SOLVER
@@ -238,7 +172,11 @@ print("\n Done!")
         κV = sol[23*X + 1:24*X,:]
     end
 
-
+@unpack  ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,VsynEE,VsynEI,VsynIE,VsynII,
+σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+αEE, αEI, αIE, αII,
+A1, A2, A3, δ, A4, B1, B2, B3,B4, C1, C2, C3,C4,
+D1, D2, D3, βK, βηE, βηI,βκV = mP
 
 WE = τE*pi*RE + im*VE
 ZE = (1.0 .-conj.(WE)) ./(1.0 .+conj.(WE))
@@ -259,7 +197,9 @@ if dimension == 2
     RI = reshape(RI,X1,X1,size(sol,2))
     ZE = reshape(ZE,X1,X1,size(sol,2))
     ZI = reshape(ZI,X1,X1,size(sol,2))
+    if Add_Potassium == 1
     K = reshape(K,X1,X1,size(sol,2))
+    end
 end
 
 

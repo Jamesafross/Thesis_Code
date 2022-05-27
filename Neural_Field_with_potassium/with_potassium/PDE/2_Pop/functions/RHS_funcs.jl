@@ -1,14 +1,16 @@
 function rhsFun(du, u, p, t)
 
+   #println(t)
+   mP,Opts = p
+   @unpack  ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,VsynEE,VsynEI,VsynIE,VsynII,
+   σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+   αEE, αEI, αIE, αII, 
+   A1, A2, A3,δ,A4, B1, B2, B3, B4,C1, C2, C3,C4,
+   D1, D2, D3, βK, βηE, βηI,βκV = mP
+   @unpack dimension,gaps_option,Add_Potassium,∇,∇ψ = Opts
+      
+
     println(t)
-
-    ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
-    σEE,σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-    αEE, αEI, αIE, αII, δ,
-    A1, A2, A3, B1, B2, B3, C1, C2, C3,
-    D1, D2, D3,βK,βηE,βηI,βκV,∇,∇ψ,options= p
-
-    Add_Potassium,gaps_option,dimension = options
 
     @views RE   = u[1:X]
     @views VE   = u[X+1:2*X]
@@ -116,19 +118,18 @@ function rhsFun(du, u, p, t)
 
     # potassium,drive and gaps strength variables
     if Add_Potassium == 1
-    du[20*X+1:21*X] = (1.0/βK)*(.-δ*K .+  fK.(RE.+RI,A1,A2,A3) .+ A4.*∇ *K)
-    du[21*X+1:22*X] = (1.0/βηE)*(.-ηE .+ fηE.(K,B1,B2,B3))
+    du[20*X+1:21*X] = (1.0/βK)*(.-δ*K .+  fK.(RE.+RI,A1,A2,A3) .+ A4.*∇ *K) .+ perturbK(t,3000,3020,perturb)
+    du[21*X+1:22*X] = (1.0/βηE)*(.-ηE .+ fηE.(K,B1,B2,B3)) 
     du[22*X+1:23*X] = (1.0/βηI)*(.-ηI .+ fηI.(K,C1,C2,C3))
     #gap junctions
     du[23*X+1:24*X] = (1.0/βκV)*(.-κV .+ fκV.(K,D1,D2,D3))
     end
 end
 
-function noiseRHS(du,u,p,t)
-    ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
-    σEE,σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-    αEE, αEI, αIE, αII, δ,
-    A1, A2, A3, B1, B2, B3, C1, C2, C3,
-    D1, D2, D3,βK,βηE,βηI,βκV,∇,∇ψ,options= p
-
+function perturbK(t,tst,tend,perturb)
+    if tend > t > tst 
+        return 2*rand(size(perturb,1))
+    else
+        return 0
+    end
 end

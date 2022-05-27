@@ -57,7 +57,7 @@ function A_mat(SteadyState,FAB,p,Add_Potassium,gaps_option)
             AEE = 2*VbarE-(gbarEE+κbarV)-(gbarEI+κbarV)-RbarE*FEE
             AEI = -RbarE*FEI
             AIE = -RbarI*FIE
-            AII = 2*VbarI-(gbarIE+κbarV)-(gbarII-κbarV)-RbarI*FII
+            AII = 2*VbarI-(gbarIE+κbarV)-(gbarII+κbarV)-RbarI*FII
         elseif gaps_option == "I-I"
             AEE = 2*VbarE-(gbarEE)-(gbarEI)-RbarE*FEE
             AEI = -RbarE*FEI
@@ -130,10 +130,10 @@ function D_mat(SteadyState,p,Add_Potassium,gaps_option)
         DII = 2.0*VbarI - (κVIE + gbarIE) - (κVII + gbarII) + κVII
     elseif Add_Potassium == 1
         if gaps_option == "ALL-ALL"
-            DEE = 2.0*VbarE-κbarV-gbarEE-gbarEI ;
+            DEE = 2.0*VbarE - (κbarV+ gbarEE) - (κbarV + gbarEI) + κbarV ;
             DEI = κbarV
             DIE = κbarV
-            DII = 2.0*VbarI-κbarV-gbarIE-gbarII
+            DII = 2.0*VbarI - (κbarV + gbarIE) - (κbarV + gbarII) + κbarV
         elseif gaps_option == "I-I"
             DEE = 2.0*VbarE-gbarEE-gbarEI ;
             DEI = 0.
@@ -189,12 +189,7 @@ function G_mat(derivatives,k,p)
     A1, A2, A3, A4,B1, B2, B3, C1, C2, C3,
     D1, D2, D3,βK,βηE,βηI,βκV = p
 
-    if gaps_option == "ALL-ALL"
-        return [d_fK_dRE d_fK_dRI d_fK_dVE d_fK_dVI -δ-A4*k^2. 0. 0. 0.;
-        0. 0. 0. 0. d_fηE_dK -1. 0. 0. ;
-        0. 0. 0. 0. d_fηI_dK  0. -1. 0. ;
-        0. 0. 0. 0. d_fκV_dK  0. 0. -1. ]
-    elseif gaps_option == "I-I"
+    if gaps_option == "I-I" || gaps_option == "ALL-ALL"
         return [d_fK_dRE d_fK_dRI d_fK_dVE d_fK_dVI -δ-A4*k^2. 0. 0. 0.;
         0. 0. 0. 0. d_fηE_dK -1. 0. 0. ;
         0. 0. 0. 0. d_fηI_dK  0. -1. 0. ;
@@ -242,13 +237,13 @@ function JacobianMatrix(V,R,κbarV,k,μ,ω,p,options,derivatives)
     αEE, αEI, αIE, αII,τ0EE,τ0EI,τ0IE,τ0II, δ,
     A1, A2, A3, A4,B1, B2, B3, C1, C2, C3,
     D1, D2, D3,βK,βηE,βηI,βκV = p
-    options = Add_Potassium, gaps_option
+    Add_Potassium, gaps_option = options
     if Add_Potassium == 1
     d_fK_dRE,d_fK_dRI,d_fK_dVE,d_fK_dVI,d_fηE_dK,d_fηI_dK,
     d_fκV_dK = derivatives 
     end
     
-    
+
     λ= μ+im*ω
     VbarE,VbarI,RbarE,RbarI = V[1],V[2],R[1],R[2]
     SteadyState = VbarE,VbarI,RbarE,RbarI,κbarV
@@ -279,11 +274,16 @@ function JacobianMatrix(V,R,κbarV,k,μ,ω,p,options,derivatives)
     end
 end
 
-function g!(F, x)
+function det_jacbobian(F, x,V,R,κbarV,k,p,options,derivatives)
+   
+    
+
     detM = det(JacobianMatrix(V,R,κbarV,k,x[1],x[2],p,options,derivatives))
     F[1] = real(detM)
     F[2] = imag(detM)
 end
+
+
 
 function G(F, x, p,Add_Potassium,gaps_option)
     ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
@@ -341,7 +341,7 @@ function G(F, x, p,Add_Potassium,gaps_option)
 
     F[3]=(gaps_term_RI - gII*rI - gIE*rI + 2*rI*vI + (ΔI/(τI*pi)))
 
-    F[4]=(gaps_term_RE + gIE*(VsynIE-vI)+gII*(VsynII-vI)-(τI^2)*(pi^2)*(rI^2)+(vI^2)+ηI)
+    F[4]=(gaps_term_VI + gIE*(VsynIE-vI)+gII*(VsynII-vI)-(τI^2)*(pi^2)*(rI^2)+(vI^2)+ηI)
 
 end
 
@@ -357,11 +357,11 @@ function SteadyStateFunc(p,Add_Potassium,gaps_option)
 
     G!(F,x) = G(F, x, p,Add_Potassium,gaps_option)
 
-    X = rand(4)
-    SS = nlsolve(G!, [ X[1];X[2];X[3];X[4]])
+    X = 2rand(4)
+    SS = nlsolve(G!, [ X[1];X[2];X[3];X[4]],method=:newton)
     while SS.f_converged == false
-        X = rand(4)
-        SS = nlsolve(G!, [ X[1];X[2];X[3];X[4]])
+        X = 2rand(4)
+        SS = nlsolve(G!, [ X[1];X[2];X[3];X[4]],method=:newton)
     end
     return SS.zero
 end
@@ -371,13 +371,8 @@ end
 
 
 function find_steady_state(p,Add_Potassium,gaps_option)
-    ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
-    σEE,σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-    αEE, αEI, αIE, αII, δ,
-    A1, A2, A3, A4,B1, B2, B3, C1, C2, C3,
-    D1, D2, D3,βK,βηE,βηI,βκV = p
     ssMat = []
-    for i = 1:1000
+    for i = 1:2000
         global flagSS = false
             steadyStateTest =  SteadyStateFunc(p,Add_Potassium,gaps_option)'
             #print("\n",steadyStateTest,"\n")
@@ -404,20 +399,150 @@ function find_steady_state(p,Add_Potassium,gaps_option)
     return ssMat
 end
 
+function SteadyStateFunc2(p,Add_Potassium,gaps_option,X)
+    ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
+    σEE,σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+    αEE, αEI, αIE, αII,τ0EE,τ0EI,τ0IE,τ0II, δ,
+    A1, A2, A3, A4,B1, B2, B3, C1, C2, C3,
+    D1, D2, D3,βK,βηE,βηI,βκV = p
 
-function makeSpectrum(reL,imL,k_vec,X)
+    G!(F,x) = G(F, x, p,Add_Potassium,gaps_option)
+
+    SS = nlsolve(G!, [ X[1];X[2];X[3];X[4]])
+    counter = 0
+    while SS.f_converged == false && counter < 100
+        Y = X .+ 0.1rand(4)
+        SS = nlsolve(G!, [ Y[1];Y[2];Y[3];Y[4]],method=:newton)
+        counter += 1
+    end
+    return SS.zero
+end
+
+function find_steady_state2(p,Add_Potassium,gaps_option,X)
+    ΔE, ΔI, κVEE,κVEI,κVIE,κVII,ηE,ηI,τE,τI,
+    σEE,σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+    αEE, αEI, αIE, αII, δ,
+    A1, A2, A3, A4,B1, B2, B3, C1, C2, C3,
+    D1, D2, D3,βK,βηE,βηI,βκV = p
+    ssMat = []
+    for i = 1:1000
+
+        global flagSS = false
+            steadyStateTest =  SteadyStateFunc2(p,Add_Potassium,gaps_option,X)'
+            #print("\n",steadyStateTest,"\n")
+            while steadyStateTest[1] < 0 || steadyStateTest[3] < 0
+                steadyStateTest =  SteadyStateFunc2(p,Add_Potassium,gaps_option,X)'
+            end
+        
+        if i == 1
+                ssMat = cat(ssMat,steadyStateTest,dims=1)
+        else
+            for j = 1:size(ssMat,1)
+                if sum(abs.((steadyStateTest' .- ssMat[j,:]))) < 10^-1
+                    global flagSS = true
+                end
+            end
+            if flagSS  == false
+                if steadyStateTest[1] > 0
+                    if  steadyStateTest[3] > 0
+                        ssMat =  cat(ssMat,steadyStateTest,dims=1)
+                    end
+                end
+            end
+        end
+    end
+    return ssMat
+end
+
+function find_eigs(V,R,κbarV,k,p,options,derivatives)
+    reL = 0.0
+    imL = 0.0
+    g!(F,x) = det_jacbobian(F, x,V,R,κbarV,k,p,options,derivatives)
+    for i = 1:10
+       
+        X1, X2 = [randn(), randn()]
+        testL  = nlsolve(g!, [X1; X2])
+        while  testL.f_converged == false
+                testL  = nlsolve(g!, [X1; X2])
+                X1,X2 = X1 + 0.1*randn(),X2+0.1*randn()
+        end
+        reL = cat(reL,testL.zero[1],dims = 1)
+        imL = cat(imL,testL.zero[2],dims = 1)
+
+    end
+     
+    return reL[2:end], imL[2:end]
+end
+
+function find_all_eigs(V,R,κbarV,k_vec,p,options,derivatives)
+
+
+    eigs=[]
+
+    for i = 1:size(k_vec,1)
+        #print(i)
+        k = k_vec[i]
+        reLit,imLit = find_eigs(V,R,κbarV,k,p,options,derivatives)
+        eigs = cat(eigs,reLit.+im*imLit,dims=1)
+        eigs = cat(eigs,(reLit.^2 .+ imLit.^2)./(reLit.+im*imLit),dims=1)
+    end
+
+    return unique(round.(eigs,digits=7))
+end
+
+function find_all_eigs_k(V,R,κbarV,k_vec,p,options,derivatives)
+
+
+    eigs=[]
+    ksave = []
+
+    for i = 1:size(k_vec,1)
+        print(i)
+        k = k_vec[i]
+        reLit,imLit = find_eigs(V,R,κbarV,k,p,options,derivatives)
+        eigs = cat(eigs,reLit.+im*imLit,dims=1)
+        k_vec = cat(k_vec,k,dims=1)
+        eigs = cat(eigs,(reLit.^2 .+ imLit.^2)./(reLit.+im*imLit),dims=1)
+        ksave = cat(k_vec,k,dims=1)
+        
+    end
+
+    return eigs,ksave
+end
+
+
+    
+    
+
+
+
+
+function makeSpectrum(reL_vec,imL_vec,k_vec,X,V,R,κbarV,p,derivatives)
+
+    
     for i = 1:length(k_vec)
         if i == 1
         global X1, X2 = [X[1], X[2]]
         end
-            global k = k_vec[i]
+        global k = k_vec[i]
+        g!(F,x) = det_jacbobian(F, x,V,R,κbarV,k,p,options,derivatives)
         #println(k)
-    
-        while nlsolve(g!, [X1; X2]).f_converged == false  || abs(X1 - -0.04) < 0.0001 
-    
+        if i == 1
+            while nlsolve(g!, [X1; X2],method=:newton).f_converged == false || abs.(nlsolve(g!, [X1; X2]).zero[1]+ 1/βηE) < 0.001 || abs.(nlsolve(g!, [X1; X2]).zero[1] + 1/βκV) < 0.001 
+
+                X1,X2 = randn(),X2+randn()
+            end
+        
+            reL_vec[i], imL_vec[i] = nlsolve(g!, [X1; X2],method=:newton).zero
+        else  
+            while nlsolve(g!, [X1; X2],method=:newton).f_converged == false || abs.(nlsolve(g!, [X1; X2]).zero[1]+ 1/βηE) < 0.001 || abs.(nlsolve(g!, [X1; X2]).zero[1]+ 1/βκV) < 0.001 
+        
             X1,X2 = X1 + 0.1*randn(),X2+0.1*randn()
+            end
+
+            reL_vec[i], imL_vec[i] = nlsolve(g!, [X1; X2],method=:newton).zero
         end
-        reL_vec[i], imL_vec[i] = nlsolve(g!, [X1; X2]).zero
+
 
         X1, X2 = reL_vec[i], imL_vec[i]
     end

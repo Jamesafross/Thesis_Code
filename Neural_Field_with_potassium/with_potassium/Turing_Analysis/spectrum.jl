@@ -11,8 +11,9 @@ file_save = "1D_potassium/spectrum_1D_turinghopf"
 save_data = "N" #(Y/N)
 Add_Potassium = 1
 dimensions = 1
-gaps_option = "I-I" # ( I-I or ALL-ALL or OFF)
-k_vec = LinRange(-10,10, 10000)
+gaps_option = "ALL-ALL" # ( I-I or ALL-ALL or OFF)
+k_vec = LinRange(0,5, 10000)
+shunts = 1
 
 options = [Add_Potassium,gaps_option]
 
@@ -22,7 +23,7 @@ options = [Add_Potassium,gaps_option]
 ΔI = ΔA
 τE = 9.0
 τI = 11.0
-VsynEE = 12.0
+VsynEE = 11.0
 VsynEI = VsynEE*(-10.0/16.0)
 VsynIE = VsynEE*(10.0/16.0)
 VsynII = VsynEE*(-11.0/16.0)
@@ -30,9 +31,9 @@ VsynII = VsynEE*(-11.0/16.0)
 #g and ψ params
 ss = 1
 σEE = ss * 0.2
-σEI = ss * 1.5
+σEI = ss * 1.6
 σIE = 0.2
-σII = 1.5
+σII = 1.6
 
 #conduction velocity
 v =.08
@@ -45,10 +46,10 @@ v =.08
 
 #synaptic connection strengths
 κSc = 1.0
-κSEE = κSc*5.0
-κSEI = κSc*κSEE*(4.9/5.0)
-κSIE = κSc*κSEE*(4.9/5.0)
-κSII =  κSc*κSEE*(3.0/5.0)
+κSEE = κSc*2.28
+κSEI = κSc*κSEE*(4.6/5.0)
+κSIE = κSc*κSEE*(4.6/5.0)
+κSII =  κSc*κSEE*(3.1/5.0)
 
 #Drive params
 ηE = 1
@@ -71,7 +72,7 @@ A2 = 2.0 #steepness
 A3 = 0.0
 βK = 1.0 #time constant
 # other potassiumn params
-δ = 0.09 #decay rate
+δ = 0.2 #decay rate
 A4 = 0.3 #diffusion rate
 fK(x,A1,A2,A3) = x*f("sigmoid",x,A1,A2,A3)
 dfK(x,A1,A2,A3) = f("sigmoid",x,A1,A2,A3) + x*dfdx("sigmoid",x,A1,A2,A3)
@@ -168,8 +169,8 @@ if Add_Potassium == 1
     ηbarI = fηI(Kbar,C1,C2,C3)
     d_fK_dRE = dfK(RbarE+RbarI,A1,A2,A3)
     d_fK_dRI = dfK(RbarE+RbarI,A1,A2,A3)
-    d_fK_dVE = 0
-    d_fK_dVI = 0
+    d_fK_dVE = 0.
+    d_fK_dVI = 0.
     d_fηE_dK = dfηE(Kbar,B1,B2,B3)
     d_fηI_dK = dfηI(Kbar,C1,C2,C3)
     d_fκV_dK = dfκV(Kbar,D1,D2,D3)
@@ -185,30 +186,33 @@ end
 reL_vec = zeros(length(k_vec))
 imL_vec = zeros(length(k_vec))
 
-reL_vec, imL_vec = makeSpectrum(reL_vec,imL_vec,k_vec,[0.5,0.5])
+eigs,k = find_all_eigs_k(V,R,κbarV,k_vec,p,options,derivatives)
 
-k_max = k_vec[findmax(reL_vec)[2]]
-ω_max = imL_vec[findmax(reL_vec)[2]]
+#k_max = k_vec[findmax(reL_vec)[2]]
+#ω_max = imL_vec[findmax(reL_vec)[2]]
 
 #print("\n dif = ",findmax(reL_vec)[1] - findmin(reL_vec)[1],"\n")
-if maximum(reL_vec) > 0.0
+if maximum(real(eigs)) > 0.0
     stability = "unstable"
 else
     stability = "stable"
 end
-print("\n maximum μ at |k| = ", abs(k_max)," (",stability,")\n")
+#print("\n maximum μ at |k| = ", abs(k_max)," (",stability,")\n")
 
-k_vec_save = cat(k_vec,k_vec,dims=1)
-reL_vec_save = cat(reL_vec,reL_vec,dims=1)
-imL_vec_save = cat(imL_vec,-imL_vec,dims=1)
-spectrum_data = [k_vec_save reL_vec_save imL_vec_save]
+#k_vec_save = cat(k_vec,k_vec,dims=1)
+#reL_vec_save = cat(reL_vec,reL_vec,dims=1)
+#imL_vec_save = cat(imL_vec,-imL_vec,dims=1)
+#spectrum_data = [k_vec_save reL_vec_save imL_vec_save]
 
 
 if save_data == "Y" 
 npzwrite("/home/james/PhD_Work/Python_Code/ExtraCellularPotassium/data/$file_save", spectrum_data)
 end
 
-plot(plot(k_vec, [zeros(length(reL_vec)), reL_vec]), plot(imL_vec))
+eigs1 = unique(round.(eigs,digits=6))
+
+scatter(real(eigs1) + im*imag(eigs1))
+
 
 
 

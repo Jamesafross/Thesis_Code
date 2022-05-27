@@ -34,6 +34,12 @@ end
 
 
 function f_potassium!(F, x)
+    @unpack  ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,VsynEE,VsynEI,VsynIE,VsynII,
+    σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+    αEE, αEI, αIE, αII, δ,
+    A1, A2, A3, B1, B2, B3, C1, C2, C3,
+    D1, D2, D3, βK, βηE, βηI,βκV = mP
+
     gEE = κSEE*x[1]
     gEI = κSEI*x[3]
     gIE = κSIE*x[1]
@@ -70,6 +76,11 @@ function f_potassium!(F, x)
 end
 
 function f_nopotassium!(F, x)
+    @unpack  ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,VsynEE,VsynEI,VsynIE,VsynII,
+    σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+    αEE, αEI, αIE, αII, δ,
+    A1, A2, A3, B1, B2, B3, C1, C2, C3,
+    D1, D2, D3, βK, βηE, βηI,βκV = mP
     rE  = x[1]
     vE  = x[2]
     rI  = x[3]
@@ -163,44 +174,39 @@ function attach_ss!(ssMat,u0,a,b,Add_Potassium,X,X_space,dimension)
 end
 
 function find_steady_state(p)
-    ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,
-    σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-    αEE, αEI, αIE, αII, δ,
-    A1, A2, A3, B1, B2, B3, C1, C2, C3,
-    D1, D2, D3, βK, βηE, βηI,βκV,∇,∇ψ,options=p
-ssMat = []
-for i = 1:1000
-    global flagSS = false
-    if Add_Potassium == 0
-        steadyStateTest =  SteadyStateNoPotassium()'
-        #print("\n",steadyStateTest,"\n")
-        while steadyStateTest[1] < 0 || steadyStateTest[3] < 0
+    ssMat = []
+    for i = 1:1000
+        global flagSS = false
+        if Add_Potassium == 0
             steadyStateTest =  SteadyStateNoPotassium()'
-        end
-    elseif Add_Potassium == 1
-        steadyStateTest = SteadyStatePotassium(gaps_option)'
-        while steadyStateTest[1] < 0 || steadyStateTest[3] < 0
-            steadyStateTest =  SteadyStatePotassium(gaps_option)'
-        end
-    end
-    if i == 1
-            ssMat = cat(ssMat,steadyStateTest,dims=1)
-    else
-        for j = 1:size(ssMat,1)
-            if sum(abs.((steadyStateTest' .- ssMat[j,:]))) < 10^-1
-                global flagSS = true
+            #print("\n",steadyStateTest,"\n")
+            while steadyStateTest[1] < 0 || steadyStateTest[3] < 0
+                steadyStateTest =  SteadyStateNoPotassium()'
+            end
+        elseif Add_Potassium == 1
+            steadyStateTest = SteadyStatePotassium(gaps_option)'
+            while steadyStateTest[1] < 0 || steadyStateTest[3] < 0
+                steadyStateTest =  SteadyStatePotassium(gaps_option)'
             end
         end
-        if flagSS  == false
-            if steadyStateTest[1] > 0
-                if  steadyStateTest[3] > 0
-                    ssMat =  cat(ssMat,steadyStateTest,dims=1)
+        if i == 1
+                ssMat = cat(ssMat,steadyStateTest,dims=1)
+        else
+            for j = 1:size(ssMat,1)
+                if sum(abs.((steadyStateTest' .- ssMat[j,:]))) < 10^-1
+                    global flagSS = true
+                end
+            end
+            if flagSS  == false
+                if steadyStateTest[1] > 0
+                    if  steadyStateTest[3] > 0
+                        ssMat =  cat(ssMat,steadyStateTest,dims=1)
+                    end
                 end
             end
         end
     end
-end
-return ssMat
+    return ssMat
 end
 
 
@@ -211,12 +217,16 @@ end
 
 
 function setup(p,use_rand_init_conds,restard_solve,X)
-        ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,
-        σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
-        αEE, αEI, αIE, αII, δ,
-        A1, A2, A3, B1, B2, B3, C1, C2, C3,
-        D1, D2, D3, βK, βηE, βηI,βκV,∇,∇ψ,options = p
-        Add_Potassium,gaps_option,dimension = options
+    mP,Opts = p
+    @unpack  ΔE, ΔI, κVEE,κVEI, κVIE,κVII,ηE,ηI,τE,τI,VsynEE,VsynEI,VsynIE,VsynII,
+    σEE, σEI,σIE, σII, v, κSEE,κSEI,κSIE, κSII,
+    αEE, αEI, αIE, αII,
+    A1, A2, A3, δ, A4, B1, B2, B3,B4, C1, C2, C3,C4,
+    D1, D2, D3, βK, βηE, βηI,βκV = mP
+    @unpack dimension,gaps_option,Add_Potassium,∇,∇ψ = Opts
+       
+
+    
     ssMat = find_steady_state(p) #find steady state(s)
     ssMat = ssMat[sortperm(ssMat[:,1]),:] #arrang from lowest RE to highest RE
     numSS = size(ssMat,1) #number of steady states
@@ -375,8 +385,6 @@ function setup(p,use_rand_init_conds,restard_solve,X)
         end
     end
 
-
     return u0,ssMat
 
-    
 end
